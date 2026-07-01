@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.4</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.5</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4406,14 +4406,12 @@ function selecionarTipoOcorrencia(tipo) {
             if (lnk) lnk.style.display = 'inline-block';
         }
         
-function abrirModalDetalhesRomaneio() {
+async function abrirModalDetalhesRomaneio() {
     const modal = document.getElementById('modalDetalhesRomaneio');
     const loading = document.getElementById('loadingDetalhes');
     const wrapper = document.getElementById('wrapperTabelaMobile');
     
-    // ==========================================================================
     // 🩹 TRAVA ULTRA-RESILIENTE: BUSCA O ROMANEIO POR MÚLTIPLAS VIAS DE SEGURANÇA
-    // ==========================================================================
     const selectRom = document.getElementById('romaneio') || document.getElementById('selecaoRomaneioDoca');
     let romaneioAtivo = "";
     
@@ -4428,7 +4426,6 @@ function abrirModalDetalhesRomaneio() {
     if (!romaneioAtivo || romaneioAtivo.toString().trim() === "") {
         return alert("Selecione ou valide um romaneio válido primeiro!");
     }
-    // ==========================================================================
 
     const txtTitulo = document.getElementById('tituloModalDetalhes');
     if (txtTitulo) txtTitulo.innerText = `Romaneio: ${romaneioAtivo}`;
@@ -4442,10 +4439,29 @@ function abrirModalDetalhesRomaneio() {
     if (loading) loading.style.display = 'block';
     if (wrapper) wrapper.style.display = 'none';
 
-    // Dispara a chamada ao Back-end Mestre passando a ação e o romaneio alvo
-    const ID_CHAMADA = "cbDetalhes_" + new Date().getTime();
-    
-    window[ID_CHAMADA] = function(res) {
+    try {
+        // Captura o endpoint correto mapeado no seu arquivo original
+        const endpointFinal = typeof urlSheets !== "undefined" ? urlSheets : (typeof WEB_APP_URL !== "undefined" ? WEB_APP_URL : "");
+        
+        if (!endpointFinal) {
+            throw new Error("Endpoint de comunicação com o Apps Script não definido.");
+        }
+
+        // 🚀 ATUALIZAÇÃO CIRÚRGICA DE REDE: Migração de JSONP para Fetch POST assíncrono (Anti-Bloqueio)
+        const payload = {
+            action: 'obterDetalhesBaseRomaneio',
+            romaneio: romaneioAtivo,
+            uf: typeof window.UF_SELECIONADA !== "undefined" ? window.UF_SELECIONADA : "PR" // Fallback seguro
+        };
+
+        const response = await fetch(endpointFinal, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        });
+
+        const res = await response.json();
+        
         if (loading) loading.style.display = 'none';
         
         if (res && res.success && res.dados && res.dados.length > 0) {
@@ -4454,9 +4470,9 @@ function abrirModalDetalhesRomaneio() {
                 tbody.innerHTML = "";
 
                 res.dados.forEach(linha => {
-                    // Critério 1: Valida se a primeira coluna (ROMANEIO) é maior que zero/válida
+                    // Critério 1: Valida se a primeira coluna (ROMANEIO) é maior que zero
                     let numRom = parseInt(linha.ROMANEIO, 10);
-                    if (isNaN(numRom) || numRom <= 0) return; // Filtra a linha e ignora
+                    if (isNaN(numRom) || numRom <= 0) return; // Filtra e ignora
 
                     const tr = document.createElement('tr');
                     tr.style.borderBottom = "1px solid #f1f1f1";
@@ -4466,7 +4482,7 @@ function abrirModalDetalhesRomaneio() {
                         ? "<span style='background:#e8f5e9; color:#2e7d32; padding:3px 8px; border-radius:4px; font-weight:bold;'>SIM</span>"
                         : "<span style='background:#ffefee; color:#c9302c; padding:3px 8px; border-radius:4px;'>NÃO</span>";
 
-                    // Critério 2: Renderiza as colunas mapeadas na ordem estipulada
+                    // Critério 2: Renderiza as colunas na ordem estipulada
                     tr.innerHTML = `
                         <td style="padding: 10px; font-weight: bold;">${linha.ROMANEIO}</td>
                         <td style="padding: 10px;">${linha.OV || '-'}</td>
@@ -4490,30 +4506,18 @@ function abrirModalDetalhesRomaneio() {
                 containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">Nenhum registro ativo encontrado para este romaneio.</div>`;
             }
         }
-        delete window[ID_CHAMADA];
-    };
 
-    // 🩹 COMPATIBILIDADE DE INFRAESTRUTURA DE REDE (JSONP FALLBACK)
-    if (typeof callServer === 'function') {
-        callServer('obterDetalhesBaseRomaneio', {
-            romaneio: romaneioAtivo,
-            uf: window.UF_SELECIONADA
-        }, ID_CHAMADA);
-    } else {
-        const endpointScript = typeof urlSheets !== "undefined" ? urlSheets : (typeof WEB_APP_URL !== "undefined" ? WEB_APP_URL : "");
-        const srcUrl = `${endpointScript}?action=obterDetalhesBaseRomaneio&romaneio=${encodeURIComponent(romaneioAtivo)}&uf=${encodeURIComponent(window.UF_SELECIONADA)}&callback=${ID_CHAMADA}`;
-        const scriptTag = document.createElement('script');
-        scriptTag.src = srcUrl;
-        scriptTag.id = ID_CHAMADA;
-        scriptTag.onerror = function() {
-            if (loading) loading.style.display = 'none';
-            alert("Erro físico de comunicação com o servidor regional.");
-            delete window[ID_CHAMADA];
-            scriptTag.remove();
-        };
-        document.body.appendChild(scriptTag);
+    } catch (errRede) {
+        console.error("Erro crítico na chamada de auditoria:", errRede);
+        if (loading) loading.style.display = 'none';
+        
+        const containerErros = document.getElementById('corpoTabelaDetalhes');
+        if (containerErros) {
+            containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ Erro de comunicação com o servidor regional. Detalhes: ${errRede.toString()}</div>`;
+        }
     }
 }
+
 
         
         function fecharModalDetalhesRomaneio() {
