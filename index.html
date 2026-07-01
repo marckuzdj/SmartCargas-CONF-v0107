@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.2</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.3</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -1657,22 +1657,17 @@ async function atualizarDadosExtras() {
 }
 
 
-
-
-
-
-
-
-
-
-
-
 function limparCamposExtras() {
     ["campo_operador", "transp", "total_pedidos", "total_volumes"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = (id === "total_pedidos" || id === "total_volumes") ? 0 : "";
     });
+
+    // 🩹 INJEÇÃO CIRÚRGICA: Oculta o link de detalhes para limpar o estado visual
+    const lnkDetalhes = document.getElementById('lnkDetalhesRomaneio');
+    if (lnkDetalhes) lnkDetalhes.style.display = 'none';
 }
+
 
 // --- 6. ESCANEAMENTO, BEEP E PROGRESSO ---
 function tocarBeep(tipo) {
