@@ -204,7 +204,8 @@
                 70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(230, 57, 70, 0); }
                 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); }
               }
-        
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }
         
     </style>
 </head>
@@ -391,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.1</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.2</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -601,8 +602,9 @@
         <input type="text" id="usuario" readonly style="background: #f0f2f5;"> 
 
         
+        <!-- INJEÇÃO DA TRAVA 1: SELETOR DE ROMANEIO COM LINK DE DETALHES EMBUTIDO -->
         <label style="color: var(--nu-purple); font-weight: bold; font-size: 12px;">ROMANEIO</label>
-        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 15px;">
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 5px;">
             <select id="romaneio" onchange="atualizarDadosExtras()" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
                 <option value="">Selecione um Romaneio...</option>
             </select>
@@ -611,6 +613,15 @@
                 <span id="icon-sync" style="font-size: 18px;">🔄</span>
             </button>
         </div>
+        
+        <!-- 🩹 INJEÇÃO CIRÚRGICA VISUAL: Link estilizado integrado ao nu-style -->
+        <div style="margin-bottom: 15px; padding-left: 2px;">
+            <a id="lnkDetalhesRomaneio" href="javascript:void(0);" onclick="abrirModalDetalhesRomaneio()" 
+               style="display: none; font-size: 11px; color: var(--nu-purple); font-weight: bold; text-decoration: none; border-bottom: 1px dashed var(--nu-purple); letter-spacing: 0.3px;">
+                🔎 Detalhes do Romaneio...
+            </a>
+        </div>
+
 
         <!-- Linha 1: Transportadora e Operador -->
         <div class="grid-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
@@ -1468,14 +1479,27 @@ async function atualizarDadosExtras() {
  const totalPedidos = parseInt(info.TTPedidos) || 0;
  document.getElementById("total_pedidos").value = totalPedidos;
  document.getElementById("total_volumes").value = info.TTvols || 0;
+ 
  // --- CORREÇÃO: Força a exibição do container de progresso que o reset escondeu ---
  const progressoContainer = document.getElementById("progresso-lote") || document.querySelector(".progress-container");
  if (progressoContainer) {
  progressoContainer.style.setProperty("display", "block", "important");
  }
+ 
  // DIRECIONAMENTO DE CURSOR: Força o foco reativo no elemento transp imediatamente após validação do token
  const fldTransp = document.getElementById("transp");
  if (fldTransp) fldTransp.focus();
+
+ // ==========================================================================
+ // 🩹 INJEÇÃO CIRÚRGICA: ATIVAÇÃO DO LINK "DETALHES..." PÓS-SUCESSO DO TOKEN
+ // ==========================================================================
+ const lnkDetalhes = document.getElementById('lnkDetalhesRomaneio');
+ if (lnkDetalhes) {
+     lnkDetalhes.style.display = 'inline-block';
+     console.log("🔍 [FRONT-CONF] Token validado. Link 'Detalhes...' liberado para o Romaneio: " + selectedId);
+ }
+ // ==========================================================================
+
  if (statusInfo) {
  statusInfo.innerText = " Sincronizando dados com o servidor...";
  statusInfo.style.background = "#fff3cd";
@@ -4373,8 +4397,153 @@ function selecionarTipoOcorrencia(tipo) {
             document.head.appendChild(style);
           })();
         
+        /**
+         * Ativa a visibilidade do link assim que o token for validado com sucesso
+         */
+        function exibirLinkDetalhesRomaneio() {
+            const lnk = document.getElementById('lnkDetalhesRomaneio');
+            if (lnk) lnk.style.display = 'inline-block';
+        }
         
-</script>
+        function abrirModalDetalhesRomaneio() {
+            const modal = document.getElementById('modalDetalhesRomaneio');
+            const loading = document.getElementById('loadingDetalhes');
+            const wrapper = document.getElementById('wrapperTabelaMobile');
+            const selectRom = document.getElementById('selecaoRomaneioDoca');
+            
+            const romaneioAtivo = selectRom ? selectRom.value : "";
+            
+            if (!romaneioAtivo) return alert("Selecione um romaneio válido primeiro!");
+        
+            document.getElementById('tituloModalDetalhes').innerText = `Romaneio: ${romaneioAtivo}`;
+            
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+            
+            // Reseta estado interno do modal para loading
+            loading.style.display = 'block';
+            wrapper.style.display = 'none';
+        
+            // Dispara a chamada ao Back-end Mestre passando a ação e o romaneio alvo
+            const ID_CHAMADA = "cbDetalhes_" + new Date().getTime();
+            
+            window[ID_CHAMADA] = function(res) {
+                loading.style.display = 'none';
+                
+                if (res && res.success && res.dados && res.dados.length > 0) {
+                    const tbody = document.getElementById('tbodyDetalhesCarga');
+                    tbody.innerHTML = "";
+        
+                    res.dados.forEach(linha => {
+                        // Critério 1: Valida se a primeira coluna (ROMANEIO) é maior que zero/válida
+                        let numRom = parseInt(linha.ROMANEIO, 10);
+                        if (isNaN(numRom) || numRom <= 0) return; // Filtra a linha e ignora
+        
+                        const tr = document.createElement('tr');
+                        tr.style.borderBottom = "1px solid #f1f1f1";
+                        
+                        // Formatação visual do status "Confirmado" (Nu-style limpo)
+                        let badgeStatus = linha.Confirmado === "SIM" 
+                            ? "<span style='background:#e8f5e9; color:#2e7d32; padding:3px 8px; border-radius:4px; font-weight:bold;'>SIM</span>"
+                            : "<span style='background:#ffefee; color:#c9302c; padding:3px 8px; border-radius:4px;'>NÃO</span>";
+        
+                        // Critério 2: Renderiza as colunas mapeadas na ordem estipulada
+                        tr.innerHTML = `
+                            <td style="padding: 10px; font-weight: bold;">${linha.ROMANEIO}</td>
+                            <td style="padding: 10px;">${linha.OV || '-'}</td>
+                            <td style="padding: 10px;">${linha.FORNEC_CROSS || '-'}</td>
+                            <td style="padding: 10px;">${linha.NF_CROSS || '-'}</td>
+                            <td style="padding: 10px;">${linha.FORNEC_LAST || '-'}</td>
+                            <td style="padding: 10px;">${linha.NF_LAST || '-'}</td>
+                            <td style="padding: 10px; text-align:center; font-weight:bold;">${linha.VOLUMES || '0'}</td>
+                            <td style="padding: 10px; text-align:center;">${badgeStatus}</td>
+                            <td style="padding: 10px;">${linha.Conferente || '-'}</td>
+                            <td style="padding: 10px; font-size:0.75rem; color:#666;">${linha.DataConferencia || '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+        
+                    wrapper.style.display = 'block';
+                } else {
+                    document.getElementById('corpoTabelaDetalhes').innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f;">Nenhum registro ativo encontrado para este romaneio.</div>`;
+                }
+                delete window[ID_CHAMADA];
+            };
+        
+            // Executa a requisição nativa cross-origin adaptada ao seu ecossistema
+            callServer('obterDetalhesBaseRomaneio', {
+                romaneio: romaneioAtivo,
+                uf: window.UF_SELECIONADA
+            }, ID_CHAMADA);
+        }
+        
+        function fecharModalDetalhesRomaneio() {
+            const modal = document.getElementById('modalDetalhesRomaneio');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
 
+</script>
+<!-- ==============================================================================
+     MODAL DE DETALHES RESPONSIVO (NU-STYLE ECOSYSTEM)
+     ============================================================================== -->
+<div id="modalDetalhesRomaneio" class="hidden" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; padding: 12px; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 650px; max-height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid #eee;">
+        
+        <!-- Cabeçalho Minimalista -->
+        <div style="padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f1f1;">
+            <div>
+                <span style="font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Auditoria Física</span>
+                <h3 style="margin: 2px 0 0 0; font-size: 16px; color: var(--nu-purple); font-weight: bold;" id="tituloModalDetalhes">Carregando dados...</h3>
+            </div>
+            <button onclick="fecharModalDetalhesRomaneio()" style="background: #f5f5f5; border: none; color: #555; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;">&times;</button>
+        </div>
+
+        <!-- Área de Conteúdo Fluido (Scroll Suave) -->
+        <div id="corpoTabelaDetalhes" style="flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; background: #fafafa;">
+            
+            <!-- Loading Indicator -->
+            <div id="loadingDetalhes" style="text-align: center; padding: 40px 0; color: #666; font-size: 13px;">
+                <div style="width: 24px; height: 24px; border: 3px solid #f3f3f3; border-top: 3px solid var(--nu-purple); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px auto;"></div>
+                Buscando carga na base regional...
+            </div>
+
+            <!-- Wrapper da Tabela de Alta Performance -->
+            <div id="wrapperTabelaMobile" style="display: none; width: 100%; overflow-x: auto; background: #ffffff; border-radius: 12px; border: 1px solid #e0e0e0;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 800px; font-size: 12px; text-align: left;">
+                    <thead>
+                        <tr style="background: #ffffff; color: #666; border-bottom: 1px solid #e0e0e0; font-weight: bold;">
+                            <th style="padding: 12px 14px;">ROMANEIO</th>
+                            <th style="padding: 12px 14px;">OV</th>
+                            <th style="padding: 12px 14px;">FORNEC_CROSS</th>
+                            <th style="padding: 12px 14px;">NF_CROSS</th>
+                            <th style="padding: 12px 14px;">FORNEC_LAST</th>
+                            <th style="padding: 12px 14px;">NF_LAST</th>
+                            <th style="padding: 12px 14px; text-align: center;">VOLUMES</th>
+                            <th style="padding: 12px 14px; text-align: center;">STATUS</th>
+                            <th style="padding: 12px 14px;">CONFERENTE</th>
+                            <th style="padding: 12px 14px;">DATA CONF.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyDetalhesCarga" style="color: #333;">
+                        <!-- Linhas injetadas em tempo real -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- Rodapé Minimalista -->
+        <div style="background: #ffffff; padding: 14px 20px; border-top: 1px solid #f1f1f1; text-align: right; display: flex; justify-content: space-between; align-items: center;">
+            <div id="txtResumoItensModal" style="font-size: 11px; color: #777; font-weight: 500;"></div>
+            <button onclick="fecharModalDetalhesRomaneio()" style="padding: 10px 22px; background: var(--nu-purple, #820ad1); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Entendido</button>
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
