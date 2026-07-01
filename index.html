@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.6</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.7</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4406,51 +4406,26 @@ function selecionarTipoOcorrencia(tipo) {
             if (lnk) lnk.style.display = 'inline-block';
         }
         
-async function abrirModalDetalhesRomaneio() {
+function abrirModalDetalhesRomaneio() {
     const modal = document.getElementById('modalDetalhesRomaneio');
     const loading = document.getElementById('loadingDetalhes');
     const wrapper = document.getElementById('wrapperTabelaMobile');
     
-    // 1. Busca o Romaneio Ativo por múltiplas vias de segurança
+    // Captura o Romaneio Ativo por múltiplas vias de segurança
     const selectRom = document.getElementById('romaneio') || document.getElementById('selecaoRomaneioDoca');
     let romaneioAtivo = "";
     if (selectRom && selectRom.value) {
         romaneioAtivo = selectRom.value;
     } else if (typeof selectedId !== "undefined" && selectedId) {
         romaneioAtivo = selectedId;
-    } else if (typeof window.ROMANEIO_CONTEXTO_ATIVO !== "undefined" && window.ROMANEIO_CONTEXTO_ATIVO) {
-        romaneioAtivo = window.ROMANEIO_CONTEXTO_ATIVO;
     }
 
     if (!romaneioAtivo || romaneioAtivo.toString().trim() === "") {
         return alert("Selecione ou valide um romaneio válido primeiro!");
     }
 
-    // 2. 🔥 CAPTURA RESILIENTE DA UF (Evita o erro de UF Undefined)
-    let ufContexto = "PR"; // Fallback padrão caso tudo falhe
-    if (typeof window.UF_SELECIONADA !== "undefined" && window.UF_SELECIONADA) {
-        ufContexto = window.UF_SELECIONADA;
-    } else {
-        // Tenta pescar a UF direto de um input ou elemento do seu modal de login se existir
-        const elUf = document.getElementById('ufContexto') || document.getElementById('ufLogadaDisplay') || document.getElementById('UF');
-        if (elUf && elUf.value) ufContexto = elUf.value;
-    }
-
-    // 3. CAPTURA DO ENDPOINT DO GOOGLE SCRIPT
-    // Garante que vai pegar a URL correta independente do nome da constante usada no seu projeto
-    let endpointFinal = "";
-    if (typeof urlSheets !== "undefined" && urlSheets) endpointFinal = urlSheets;
-    else if (typeof WEB_APP_URL !== "undefined" && WEB_APP_URL) endpointFinal = WEB_APP_URL;
-    else if (typeof scriptUrl !== "undefined" && scriptUrl) endpointFinal = scriptUrl;
-
-    // 🚨 ALERTA DE DIAGNÓSTICO (Remova após o teste funcionar):
-    // Se este alert mostrar alguma variável vazia ou esquisita, descobrimos o culpado!
-    console.log("📡 [DEBUG DETALHES] URL: " + endpointFinal + " | Romaneio: " + romaneioAtivo + " | UF: " + ufContexto);
-
-    if (!endpointFinal || endpointFinal.trim() === "") {
-        if (loading) loading.style.display = 'none';
-        return alert("Erro de Configuração: A URL do servidor (urlSheets / WEB_APP_URL) não foi localizada no código!");
-    }
+    let ufContexto = typeof window.UF_SELECIONADA !== "undefined" ? window.UF_SELECIONADA : "PR";
+    let endpointFinal = typeof urlSheets !== "undefined" ? urlSheets : (typeof WEB_APP_URL !== "undefined" ? WEB_APP_URL : "");
 
     const txtTitulo = document.getElementById('tituloModalDetalhes');
     if (txtTitulo) txtTitulo.innerText = `Romaneio: ${romaneioAtivo}`;
@@ -4463,21 +4438,10 @@ async function abrirModalDetalhesRomaneio() {
     if (loading) loading.style.display = 'block';
     if (wrapper) wrapper.style.display = 'none';
 
-    try {
-        // 🚀 MONTAGEM DA URL VIA GET LIMPA E CORRETA
-        // Remove barras duplicadas ou espaços acidentais que quebram a rede do navegador
-        let urlLimpa = endpointFinal.trim();
-        const urlFinal = `${urlLimpa}?action=obterDetalhesBaseRomaneio&romaneio=${encodeURIComponent(romaneioAtivo)}&uf=${encodeURIComponent(ufContexto.trim().toUpperCase())}`;
-
-        // Executa a chamada de rede assíncrona pura
-        const response = await fetch(urlFinal, { method: 'GET' });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP Status Erro: ${response.status}`);
-        }
-
-        const res = await response.json();
-        
+    // 🔥 CANAL ANTI-CORS: Criação do Callback Dinâmico para o JSONP
+    const ID_CHAMADA = "cbDetalhes_" + new Date().getTime();
+    
+    window[ID_CHAMADA] = function(res) {
         if (loading) loading.style.display = 'none';
         
         if (res && res.success && res.dados && res.dados.length > 0) {
@@ -4512,7 +4476,6 @@ async function abrirModalDetalhesRomaneio() {
                 });
             }
 
-            // Atualiza o contador de rodapé do modal
             const txtResumo = document.getElementById('txtResumoItensModal');
             if (txtResumo) txtResumo.innerText = `${res.dados.length} item(ns) na carga regional`;
 
@@ -4524,16 +4487,30 @@ async function abrirModalDetalhesRomaneio() {
             }
         }
 
-    } catch (errRede) {
-        console.error("Erro crítico na chamada de rede:", errRede);
+        // Limpeza de rastro do script no DOM e na memória do navegador
+        delete window[ID_CHAMADA];
+        const scriptLixo = document.getElementById(ID_CHAMADA);
+        if (scriptLixo) scriptLixo.remove();
+    };
+
+    // Executa a injeção nativa via Tag Script (Bypassa o bloqueio de CORS da GitHub Pages)
+    const srcUrl = `${endpointFinal.trim()}?action=obterDetalhesBaseRomaneio&romaneio=${encodeURIComponent(romaneioAtivo)}&uf=${encodeURIComponent(ufContexto.trim().toUpperCase())}&callback=${ID_CHAMADA}`;
+    const script = document.createElement('script');
+    script.src = srcUrl;
+    script.id = ID_CHAMADA;
+    script.onerror = function() {
         if (loading) loading.style.display = 'none';
         
         const containerErros = document.getElementById('corpoTabelaDetalhes');
         if (containerErros) {
-            containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ Erro físico de comunicação com o servidor regional.<br><span style="font-size:11px; font-weight:normal; color:#777;">Causa: ${errRede.toString()}</span></div>`;
+            containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ Falha física de comunicação com o servidor de borda.</div>`;
         }
-    }
+        delete window[ID_CHAMADA];
+        script.remove();
+    };
+    document.body.appendChild(script);
 }
+
 
 
 
