@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.4</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.5</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4428,7 +4428,7 @@ function selecionarTipoOcorrencia(tipo) {
             }
         
             // ============================================================================
-            // 🩹 ENCAIXE CIRÚRGICO: INTEGRAÇÃO COM AS VARIÁVEIS NATIVAS DO SEU PROJETO
+            // 🩹 ENCAIXE CIRÚRGICA: INTEGRAÇÃO COM AS VARIÁVEIS NATIVAS DO SEU PROJETO
             // ============================================================================
             let ufContexto = typeof UF_SELECIONADA_CONF !== "undefined" ? UF_SELECIONADA_CONF : "PR";
             let endpointFinal = typeof urlSheets !== "undefined" ? urlSheets : "";
@@ -4459,6 +4459,7 @@ function selecionarTipoOcorrencia(tipo) {
                 
                 if (res && res.success === true && res.dados && res.dados.length > 0) {
                     if (tbody) {
+                        tbody.innerHTML = ""; // Limpeza preventiva de garantia para o laço
                         res.dados.forEach(linha => {
                             // Critério 1: Valida se a primeira coluna (romaneio) é maior que zero/válida
                             let numRom = parseInt(linha.romaneio, 10);
@@ -4508,14 +4509,17 @@ function selecionarTipoOcorrencia(tipo) {
                 if (scriptLixo) scriptLixo.remove();
             };
         
-            // 🚀 MONTAGEM ULTRA-BLINDADA: Vincula os parâmetros corretos e o token de callback dinâmico
+            // 🚀 MONTAGEM ULTRA-BLINDADA COM QUEBRA DE CACHE (REAL-TIME ETHERNAL)
             var endpointTratado = endpointFinal.toString().trim();
             var romaneioTratado = encodeURIComponent(romaneioAtivo.toString().trim());
             var ufTratada = encodeURIComponent(ufContexto);
-        
-            const srcUrl = `${endpointTratado}?action=obterDetalhesBaseRomaneio&romaneio=${romaneioTratado}&uf=${ufTratada}&callback=${ID_CHAMADA}`;
             
-            console.log("📡 [DISPARANDO LINK REAL] ➔ " + srcUrl);
+            // Invalidador baseado em milissegundos impede o cacheamento físico do navegador [INDEX]
+            var timestampInvalidador = new Date().getTime(); 
+        
+            const srcUrl = `${endpointTratado}?action=obterDetalhesBaseRomaneio&romaneio=${romaneioTratado}&uf=${ufTratada}&callback=${ID_CHAMADA}&_cbuster=${timestampInvalidador}`;
+            
+            console.log("📡 [DISPARANDO LINK REAL COM AUTO-REFRESH] ➔ " + srcUrl);
         
             // Injeta a tag script de transmissão
             const script = document.createElement('script');
@@ -4540,6 +4544,7 @@ function selecionarTipoOcorrencia(tipo) {
             
             document.body.appendChild(script);
         }
+
 
 
         function fecharModalDetalhesRomaneio() {
@@ -4610,6 +4615,7 @@ function selecionarTipoOcorrencia(tipo) {
             <div id="wrapperTabelaMobile" style="display: none; width: 100%; overflow-x: auto; background: #ffffff; border-radius: 12px; border: 1px solid #e0e0e0;">
                 <table style="width: 100%; border-collapse: collapse; min-width: 800px; font-size: 12px; text-align: left;">
                     <thead>
+                        <!-- Localize a sua tag thead dentro do modalDetalhesRomaneio no HTML -->
                         <tr style="background: #ffffff; color: #666; border-bottom: 1px solid #e0e0e0; font-weight: bold;">
                             <th style="padding: 12px 14px;">ROMANEIO</th>
                             <th style="padding: 12px 14px;">OV</th>
@@ -4618,7 +4624,10 @@ function selecionarTipoOcorrencia(tipo) {
                             <th style="padding: 12px 14px;">FORNEC_LAST</th>
                             <th style="padding: 12px 14px;">NF_LAST</th>
                             <th style="padding: 12px 14px; text-align: center;">VOLUMES</th>
-                            <th style="padding: 12px 14px; text-align: center;">STATUS</th>
+                            
+                            <!-- 🩹 CORREÇÃO TEXTUAL EXATA DO HEADER -->
+                            <th style="padding: 12px 14px; text-align: center;">Confirmado</th>
+                            
                             <th style="padding: 12px 14px;">CONFERENTE</th>
                             <th style="padding: 12px 14px;">DATA CONF.</th>
                         </tr>
