@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.3</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.4</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4407,11 +4407,14 @@ function selecionarTipoOcorrencia(tipo) {
         }
         
         function abrirModalDetalhesRomaneio() {
+            console.log("📡 [DETALHES] Iniciando rotina de auditoria de carga...");
+        
             const modal = document.getElementById('modalDetalhesRomaneio');
             const loading = document.getElementById('loadingDetalhes');
             const wrapper = document.getElementById('wrapperTabelaMobile');
+            const tbody = document.getElementById('tbodyDetalhesCarga');
             
-            // Captura o Romaneio Ativo
+            // 1. Captura o Romaneio Ativo por múltiplas vias de segurança de escopo
             const selectRom = document.getElementById('romaneio') || document.getElementById('selecaoRomaneioDoca');
             let romaneioAtivo = "";
             if (selectRom && selectRom.value) {
@@ -4421,34 +4424,19 @@ function selecionarTipoOcorrencia(tipo) {
             }
         
             if (!romaneioAtivo || romaneioAtivo.toString().trim() === "") {
-                return alert("Selecione ou valide um romaneio válido primeiro!");
+                return alert("Por favor, selecione ou valide um romaneio primeiro!");
             }
         
             // ============================================================================
-            // 🩹 INJEÇÃO CIRÚRGICA: DIRECIONAMENTO DINÂMICO POR SCRIPTS_POR_UF
+            // 🩹 ENCAIXE CIRÚRGICO: INTEGRAÇÃO COM AS VARIÁVEIS NATIVAS DO SEU PROJETO
             // ============================================================================
-            // 1. Identifica a UF selecionada na sessão atual do usuário
-            let ufContexto = "PR"; // Fallback padrão
-            if (typeof window.UF_SELECIONADA !== "undefined" && window.UF_SELECIONADA) {
-                ufContexto = window.UF_SELECIONADA;
-            } else {
-                const elUf = document.getElementById('ufContexto') || document.getElementById('ufLogadaDisplay') || document.getElementById('UF');
-                if (elUf && elUf.value) ufContexto = elUf.value;
-            }
-            
-            ufContexto = ufContexto.trim().toUpperCase();
+            let ufContexto = typeof UF_SELECIONADA_CONF !== "undefined" ? UF_SELECIONADA_CONF : "PR";
+            let endpointFinal = typeof urlSheets !== "undefined" ? urlSheets : "";
         
-            // 2. 🔥 A CHAVE DA CORREÇÃO: Captura a URL correta e dedicada do script daquela UF
-            let endpointFinal = "";
-            if (typeof SCRIPTS_POR_UF !== "undefined" && SCRIPTS_POR_UF[ufContexto]) {
-                endpointFinal = SCRIPTS_POR_UF[ufContexto];
-                console.log(`🎯 [ROTA DIRECIONADA] UF: [${ufContexto}] -> Usando Script Dedicado: ${endpointFinal}`);
-            } else {
-                // Fallback caso o dicionário não esteja acessível por escopo
-                endpointFinal = typeof urlSheets !== "undefined" ? urlSheets : (typeof WEB_APP_URL !== "undefined" ? WEB_APP_URL : "");
-            }
+            ufContexto = ufContexto.toString().trim().toUpperCase();
             // ============================================================================
         
+            // Configura os títulos visuais e estados iniciais do modal Nu-Style
             const txtTitulo = document.getElementById('tituloModalDetalhes');
             if (txtTitulo) txtTitulo.innerText = `Romaneio: ${romaneioAtivo}`;
             
@@ -4459,30 +4447,32 @@ function selecionarTipoOcorrencia(tipo) {
             
             if (loading) loading.style.display = 'block';
             if (wrapper) wrapper.style.display = 'none';
+            if (tbody) tbody.innerHTML = "";
         
-            // 🔥 CANAL ANTI-CORS: Criação do Callback Dinâmico para o JSONP
+            // 🔥 CANAL ANTI-CORS: Criação do Callback Dinâmico para a infraestrutura JSONP
             const ID_CHAMADA = "cbDetalhes_" + new Date().getTime();
             
             window[ID_CHAMADA] = function(res) {
                 if (loading) loading.style.display = 'none';
                 
-                if (res && res.success && res.dados && res.dados.length > 0) {
-                    const tbody = document.getElementById('tbodyDetalhesCarga');
+                console.log("📥 [DETALHES] Resposta da planilha regional recebida:", res);
+                
+                if (res && res.success === true && res.dados && res.dados.length > 0) {
                     if (tbody) {
-                        tbody.innerHTML = "";
-        
                         res.dados.forEach(linha => {
-                            // 🩹 INJEÇÃO CIRÚRGICA: Propriedades normalizadas em minúsculas combinando com o Back-end
+                            // Critério 1: Valida se a primeira coluna (romaneio) é maior que zero/válida
                             let numRom = parseInt(linha.romaneio, 10);
-                            if (isNaN(numRom) || numRom <= 0) return; 
+                            if (isNaN(numRom) || numRom <= 0) return; // Filtra cabeçalhos e linhas vazias
         
                             const tr = document.createElement('tr');
                             tr.style.borderBottom = "1px solid #f1f1f1";
                             
-                            let badgeStatus = linha.confirmado === "SIM" 
+                            // Formatação visual do status "Confirmado" (Nu-style limpo)
+                            let badgeStatus = (linha.confirmado === "SIM" || linha.confirmado === "OK")
                                 ? "<span style='background:#e8f5e9; color:#2e7d32; padding:3px 8px; border-radius:4px; font-weight:bold;'>SIM</span>"
                                 : "<span style='background:#ffefee; color:#c9302c; padding:3px 8px; border-radius:4px;'>NÃO</span>";
         
+                            // Critério 2: Renderiza as colunas exatamente na ordem estipulada
                             tr.innerHTML = `
                                 <td style="padding: 10px; font-weight: bold;">${linha.romaneio}</td>
                                 <td style="padding: 10px;">${linha.ov || '-'}</td>
@@ -4500,36 +4490,34 @@ function selecionarTipoOcorrencia(tipo) {
                     }
         
                     const txtResumo = document.getElementById('txtResumoItensModal');
-                    if (txtResumo) txtResumo.innerText = `${res.dados.length} item(ns) na carga regional`;
+                    if (txtResumo) txtResumo.innerText = `${res.dados.length} item(ns) carregado(s) na doca`;
         
                     if (wrapper) wrapper.style.display = 'block';
                 } else {
+                    // Trata respostas vazias ou mensagens de erro enviadas de dentro do Apps Script
+                    var mensagemErroBD = (res && res.error) ? res.error : "Nenhum registro ativo encontrado para este romaneio.";
                     const containerErros = document.getElementById('corpoTabelaDetalhes');
                     if (containerErros) {
-                        containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ Nenhum registro ativo encontrado para este romaneio.</div>`;
+                        containerErros.innerHTML = `<div style="text-align:center; padding:40px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ ${mensagemErroBD}</div>`;
                     }
                 }
         
-                // Limpeza de rastro do script no DOM e na memória do navegador
+                // Limpeza de rastro do script no DOM e lixeira de memória (Garbage Collector)
                 delete window[ID_CHAMADA];
                 const scriptLixo = document.getElementById(ID_CHAMADA);
                 if (scriptLixo) scriptLixo.remove();
             };
         
-            // Executa a injeção nativa via Tag Script (Bypassa o bloqueio de CORS da GitHub Pages)
-            // ============================================================================
-            // 🩹 TRAVA DEFINITIVA DE TRANSMISSÃO DE REDE ANTI-CRASH
-            // ============================================================================
-            // Força a limpeza e validação das strings antes de injetar na URL
+            // 🚀 MONTAGEM ULTRA-BLINDADA: Vincula os parâmetros corretos e o token de callback dinâmico
             var endpointTratado = endpointFinal.toString().trim();
             var romaneioTratado = encodeURIComponent(romaneioAtivo.toString().trim());
-            var ufTratada = encodeURIComponent(ufContexto.toString().trim().toUpperCase());
+            var ufTratada = encodeURIComponent(ufContexto);
         
-            // 🚀 MONTAGEM ULTRA-BLINDADA: Garante a passagem do callback exato gerado na linha 31
             const srcUrl = `${endpointTratado}?action=obterDetalhesBaseRomaneio&romaneio=${romaneioTratado}&uf=${ufTratada}&callback=${ID_CHAMADA}`;
             
             console.log("📡 [DISPARANDO LINK REAL] ➔ " + srcUrl);
         
+            // Injeta a tag script de transmissão
             const script = document.createElement('script');
             script.src = srcUrl;
             script.id = ID_CHAMADA;
@@ -4540,9 +4528,9 @@ function selecionarTipoOcorrencia(tipo) {
                 const containerErros = document.getElementById('corpoTabelaDetalhes');
                 if (containerErros) {
                     containerErros.innerHTML = `
-                        <div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">
+                        <div style="text-align:center; padding:35px; color:#d9534f; font-size:13px; font-weight:bold;">
                             ⚠️ Falha física de comunicação com o servidor de borda.<br>
-                            <span style="font-size:10px; font-weight:normal; color:#777; display:block; margin-top:5px;">Verifique se a nova versão do Apps Script foi implantada corretamente.</span>
+                            <span style="font-size:10px; font-weight:normal; color:#777; display:block; margin-top:6px;">Verifique se a nova versão do deploy do Apps Script foi publicada.</span>
                         </div>
                     `;
                 }
@@ -4554,18 +4542,44 @@ function selecionarTipoOcorrencia(tipo) {
         }
 
 
-
-
-
-
-        
         function fecharModalDetalhesRomaneio() {
+            console.log("🧹 [FRONT-CONF] Fechando modal de detalhes e limpando cache visual...");
+        
             const modal = document.getElementById('modalDetalhesRomaneio');
+            const tbody = document.getElementById('tbodyDetalhesCarga');
+            const txtResumo = document.getElementById('txtResumoItensModal');
+            const containerPainel = document.getElementById('corpoTabelaDetalhes');
+        
+            // 1. Oculta o modal adicionando a classe oculta e zerando o display
             if (modal) {
                 modal.classList.add('hidden');
-                modal.style.display = 'none';
+                modal.style.display = 'none'; // Garante o fechamento físico em qualquer variação de CSS
             }
+        
+            // 2. 🔥 LIMPEZA CIRÚRGICA DE MEMÓRIA E DOM:
+            // Destrói todas as linhas antigas da tabela para liberar memória RAM no dispositivo mobile
+            if (tbody) {
+                tbody.innerHTML = ""; 
+            }
+        
+            // 3. Reseta o contador de rodapé
+            if (txtResumo) {
+                txtResumo.innerText = "";
+            }
+        
+            // 4. Se o contêiner de erros foi preenchido por uma falha anterior, restaura a casca estrutural padrão
+            // Isso evita que a mensagem de erro antiga fique visível no próximo carregamento com sucesso
+            if (containerPainel) {
+                // Remove mensagens de "Nenhum registro encontrado" ou "Falha física" deixando o espaço limpo
+                const divErroAntigo = containerPainel.querySelector('div[style*="color:#d9534f"]');
+                if (divErroAntigo) {
+                    divErroAntigo.remove();
+                }
+            }
+        
+            console.log("✅ [FRONT-CONF] Linhas destruídas. Interface liberada para a próxima auditoria.");
         }
+
 
 </script>
 <!-- ==============================================================================
