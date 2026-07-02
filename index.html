@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.2</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.3</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4406,130 +4406,152 @@ function selecionarTipoOcorrencia(tipo) {
             if (lnk) lnk.style.display = 'inline-block';
         }
         
-function abrirModalDetalhesRomaneio() {
-    const modal = document.getElementById('modalDetalhesRomaneio');
-    const loading = document.getElementById('loadingDetalhes');
-    const wrapper = document.getElementById('wrapperTabelaMobile');
-    
-    // Captura o Romaneio Ativo por múltiplas vias de segurança
-    const selectRom = document.getElementById('romaneio') || document.getElementById('selecaoRomaneioDoca');
-    let romaneioAtivo = "";
-    if (selectRom && selectRom.value) {
-        romaneioAtivo = selectRom.value;
-    } else if (typeof selectedId !== "undefined" && selectedId) {
-        romaneioAtivo = selectedId;
-    }
-
-    if (!romaneioAtivo || romaneioAtivo.toString().trim() === "") {
-        return alert("Selecione ou valide um romaneio válido primeiro!");
-    }
-
-    let ufContexto = typeof window.UF_SELECIONADA !== "undefined" ? window.UF_SELECIONADA : "PR";
-    let endpointFinal = typeof urlSheets !== "undefined" ? urlSheets : (typeof WEB_APP_URL !== "undefined" ? WEB_APP_URL : "");
-
-    const txtTitulo = document.getElementById('tituloModalDetalhes');
-    if (txtTitulo) txtTitulo.innerText = `Romaneio: ${romaneioAtivo}`;
-    
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-    }
-    
-    if (loading) loading.style.display = 'block';
-    if (wrapper) wrapper.style.display = 'none';
-
-    // 🔥 CANAL ANTI-CORS: Criação do Callback Dinâmico para o JSONP
-    const ID_CHAMADA = "cbDetalhes_" + new Date().getTime();
-    
-    window[ID_CHAMADA] = function(res) {
-        if (loading) loading.style.display = 'none';
+        function abrirModalDetalhesRomaneio() {
+            const modal = document.getElementById('modalDetalhesRomaneio');
+            const loading = document.getElementById('loadingDetalhes');
+            const wrapper = document.getElementById('wrapperTabelaMobile');
+            
+            // Captura o Romaneio Ativo
+            const selectRom = document.getElementById('romaneio') || document.getElementById('selecaoRomaneioDoca');
+            let romaneioAtivo = "";
+            if (selectRom && selectRom.value) {
+                romaneioAtivo = selectRom.value;
+            } else if (typeof selectedId !== "undefined" && selectedId) {
+                romaneioAtivo = selectedId;
+            }
         
-        if (res && res.success && res.dados && res.dados.length > 0) {
-            const tbody = document.getElementById('tbodyDetalhesCarga');
-            if (tbody) {
-                tbody.innerHTML = "";
-
-                res.dados.forEach(linha => {
-                    // 🩹 INJEÇÃO CIRÚRGICA: Propriedades normalizadas em minúsculas combinando com o Back-end
-                    let numRom = parseInt(linha.romaneio, 10);
-                    if (isNaN(numRom) || numRom <= 0) return; 
-
-                    const tr = document.createElement('tr');
-                    tr.style.borderBottom = "1px solid #f1f1f1";
-                    
-                    let badgeStatus = linha.confirmado === "SIM" 
-                        ? "<span style='background:#e8f5e9; color:#2e7d32; padding:3px 8px; border-radius:4px; font-weight:bold;'>SIM</span>"
-                        : "<span style='background:#ffefee; color:#c9302c; padding:3px 8px; border-radius:4px;'>NÃO</span>";
-
-                    tr.innerHTML = `
-                        <td style="padding: 10px; font-weight: bold;">${linha.romaneio}</td>
-                        <td style="padding: 10px;">${linha.ov || '-'}</td>
-                        <td style="padding: 10px;">${linha.fornec_cross || '-'}</td>
-                        <td style="padding: 10px;">${linha.nf_cross || '-'}</td>
-                        <td style="padding: 10px;">${linha.fornec_last || '-'}</td>
-                        <td style="padding: 10px;">${linha.nf_last || '-'}</td>
-                        <td style="padding: 10px; text-align:center; font-weight:bold;">${linha.volumes || '0'}</td>
-                        <td style="padding: 10px; text-align:center;">${badgeStatus}</td>
-                        <td style="padding: 10px;">${linha.conferente || '-'}</td>
-                        <td style="padding: 10px; font-size:0.75rem; color:#666;">${linha.data || '-'}</td>
+            if (!romaneioAtivo || romaneioAtivo.toString().trim() === "") {
+                return alert("Selecione ou valide um romaneio válido primeiro!");
+            }
+        
+            // ============================================================================
+            // 🩹 INJEÇÃO CIRÚRGICA: DIRECIONAMENTO DINÂMICO POR SCRIPTS_POR_UF
+            // ============================================================================
+            // 1. Identifica a UF selecionada na sessão atual do usuário
+            let ufContexto = "PR"; // Fallback padrão
+            if (typeof window.UF_SELECIONADA !== "undefined" && window.UF_SELECIONADA) {
+                ufContexto = window.UF_SELECIONADA;
+            } else {
+                const elUf = document.getElementById('ufContexto') || document.getElementById('ufLogadaDisplay') || document.getElementById('UF');
+                if (elUf && elUf.value) ufContexto = elUf.value;
+            }
+            
+            ufContexto = ufContexto.trim().toUpperCase();
+        
+            // 2. 🔥 A CHAVE DA CORREÇÃO: Captura a URL correta e dedicada do script daquela UF
+            let endpointFinal = "";
+            if (typeof SCRIPTS_POR_UF !== "undefined" && SCRIPTS_POR_UF[ufContexto]) {
+                endpointFinal = SCRIPTS_POR_UF[ufContexto];
+                console.log(`🎯 [ROTA DIRECIONADA] UF: [${ufContexto}] -> Usando Script Dedicado: ${endpointFinal}`);
+            } else {
+                // Fallback caso o dicionário não esteja acessível por escopo
+                endpointFinal = typeof urlSheets !== "undefined" ? urlSheets : (typeof WEB_APP_URL !== "undefined" ? WEB_APP_URL : "");
+            }
+            // ============================================================================
+        
+            const txtTitulo = document.getElementById('tituloModalDetalhes');
+            if (txtTitulo) txtTitulo.innerText = `Romaneio: ${romaneioAtivo}`;
+            
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+            
+            if (loading) loading.style.display = 'block';
+            if (wrapper) wrapper.style.display = 'none';
+        
+            // 🔥 CANAL ANTI-CORS: Criação do Callback Dinâmico para o JSONP
+            const ID_CHAMADA = "cbDetalhes_" + new Date().getTime();
+            
+            window[ID_CHAMADA] = function(res) {
+                if (loading) loading.style.display = 'none';
+                
+                if (res && res.success && res.dados && res.dados.length > 0) {
+                    const tbody = document.getElementById('tbodyDetalhesCarga');
+                    if (tbody) {
+                        tbody.innerHTML = "";
+        
+                        res.dados.forEach(linha => {
+                            // 🩹 INJEÇÃO CIRÚRGICA: Propriedades normalizadas em minúsculas combinando com o Back-end
+                            let numRom = parseInt(linha.romaneio, 10);
+                            if (isNaN(numRom) || numRom <= 0) return; 
+        
+                            const tr = document.createElement('tr');
+                            tr.style.borderBottom = "1px solid #f1f1f1";
+                            
+                            let badgeStatus = linha.confirmado === "SIM" 
+                                ? "<span style='background:#e8f5e9; color:#2e7d32; padding:3px 8px; border-radius:4px; font-weight:bold;'>SIM</span>"
+                                : "<span style='background:#ffefee; color:#c9302c; padding:3px 8px; border-radius:4px;'>NÃO</span>";
+        
+                            tr.innerHTML = `
+                                <td style="padding: 10px; font-weight: bold;">${linha.romaneio}</td>
+                                <td style="padding: 10px;">${linha.ov || '-'}</td>
+                                <td style="padding: 10px;">${linha.fornec_cross || '-'}</td>
+                                <td style="padding: 10px;">${linha.nf_cross || '-'}</td>
+                                <td style="padding: 10px;">${linha.fornec_last || '-'}</td>
+                                <td style="padding: 10px;">${linha.nf_last || '-'}</td>
+                                <td style="padding: 10px; text-align:center; font-weight:bold;">${linha.volumes || '0'}</td>
+                                <td style="padding: 10px; text-align:center;">${badgeStatus}</td>
+                                <td style="padding: 10px;">${linha.conferente || '-'}</td>
+                                <td style="padding: 10px; font-size:0.75rem; color:#666;">${linha.data || '-'}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+        
+                    const txtResumo = document.getElementById('txtResumoItensModal');
+                    if (txtResumo) txtResumo.innerText = `${res.dados.length} item(ns) na carga regional`;
+        
+                    if (wrapper) wrapper.style.display = 'block';
+                } else {
+                    const containerErros = document.getElementById('corpoTabelaDetalhes');
+                    if (containerErros) {
+                        containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ Nenhum registro ativo encontrado para este romaneio.</div>`;
+                    }
+                }
+        
+                // Limpeza de rastro do script no DOM e na memória do navegador
+                delete window[ID_CHAMADA];
+                const scriptLixo = document.getElementById(ID_CHAMADA);
+                if (scriptLixo) scriptLixo.remove();
+            };
+        
+            // Executa a injeção nativa via Tag Script (Bypassa o bloqueio de CORS da GitHub Pages)
+            // ============================================================================
+            // 🩹 TRAVA DEFINITIVA DE TRANSMISSÃO DE REDE ANTI-CRASH
+            // ============================================================================
+            // Força a limpeza e validação das strings antes de injetar na URL
+            var endpointTratado = endpointFinal.toString().trim();
+            var romaneioTratado = encodeURIComponent(romaneioAtivo.toString().trim());
+            var ufTratada = encodeURIComponent(ufContexto.toString().trim().toUpperCase());
+        
+            // 🚀 MONTAGEM ULTRA-BLINDADA: Garante a passagem do callback exato gerado na linha 31
+            const srcUrl = `${endpointTratado}?action=obterDetalhesBaseRomaneio&romaneio=${romaneioTratado}&uf=${ufTratada}&callback=${ID_CHAMADA}`;
+            
+            console.log("📡 [DISPARANDO LINK REAL] ➔ " + srcUrl);
+        
+            const script = document.createElement('script');
+            script.src = srcUrl;
+            script.id = ID_CHAMADA;
+            
+            script.onerror = function() {
+                if (loading) loading.style.display = 'none';
+                
+                const containerErros = document.getElementById('corpoTabelaDetalhes');
+                if (containerErros) {
+                    containerErros.innerHTML = `
+                        <div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">
+                            ⚠️ Falha física de comunicação com o servidor de borda.<br>
+                            <span style="font-size:10px; font-weight:normal; color:#777; display:block; margin-top:5px;">Verifique se a nova versão do Apps Script foi implantada corretamente.</span>
+                        </div>
                     `;
-                    tbody.appendChild(tr);
-                });
-            }
-
-            const txtResumo = document.getElementById('txtResumoItensModal');
-            if (txtResumo) txtResumo.innerText = `${res.dados.length} item(ns) na carga regional`;
-
-            if (wrapper) wrapper.style.display = 'block';
-        } else {
-            const containerErros = document.getElementById('corpoTabelaDetalhes');
-            if (containerErros) {
-                containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ Nenhum registro ativo encontrado para este romaneio.</div>`;
-            }
+                }
+                delete window[ID_CHAMADA];
+                script.remove();
+            };
+            
+            document.body.appendChild(script);
         }
-
-        // Limpeza de rastro do script no DOM e na memória do navegador
-        delete window[ID_CHAMADA];
-        const scriptLixo = document.getElementById(ID_CHAMADA);
-        if (scriptLixo) scriptLixo.remove();
-    };
-
-    // Executa a injeção nativa via Tag Script (Bypassa o bloqueio de CORS da GitHub Pages)
-    // ============================================================================
-    // 🩹 TRAVA DEFINITIVA DE TRANSMISSÃO DE REDE ANTI-CRASH
-    // ============================================================================
-    // Força a limpeza e validação das strings antes de injetar na URL
-    var endpointTratado = endpointFinal.toString().trim();
-    var romaneioTratado = encodeURIComponent(romaneioAtivo.toString().trim());
-    var ufTratada = encodeURIComponent(ufContexto.toString().trim().toUpperCase());
-
-    // 🚀 MONTAGEM ULTRA-BLINDADA: Garante a passagem do callback exato gerado na linha 31
-    const srcUrl = `${endpointTratado}?action=obterDetalhesBaseRomaneio&romaneio=${romaneioTratado}&uf=${ufTratada}&callback=${ID_CHAMADA}`;
-    
-    console.log("📡 [DISPARANDO LINK REAL] ➔ " + srcUrl);
-
-    const script = document.createElement('script');
-    script.src = srcUrl;
-    script.id = ID_CHAMADA;
-    
-    script.onerror = function() {
-        if (loading) loading.style.display = 'none';
-        
-        const containerErros = document.getElementById('corpoTabelaDetalhes');
-        if (containerErros) {
-            containerErros.innerHTML = `
-                <div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">
-                    ⚠️ Falha física de comunicação com o servidor de borda.<br>
-                    <span style="font-size:10px; font-weight:normal; color:#777; display:block; margin-top:5px;">Verifique se a nova versão do Apps Script foi implantada corretamente.</span>
-                </div>
-            `;
-        }
-        delete window[ID_CHAMADA];
-        script.remove();
-    };
-    
-    document.body.appendChild(script);
-}
 
 
 
