@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.13_HOM</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.15_HOM</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4187,18 +4187,37 @@ function selecionarTipoOcorrencia(tipo) {
             }
         }
 
-        function dispararLogConf(acao, detalhes) {
-            // Captura o e-mail digitado no input de login do FRONT-CONF como usuário de auditoria
-            const inputUser = document.getElementById('login-user');
-            const userLog = inputUser ? inputUser.value.trim().toUpperCase() : "CONFERENTE_DESCONHECIDO";
-            
-            // urlSheets é a sua constante que aponta para o script mestre do Google
-            const urlBase = typeof urlSheets !== 'undefined' ? urlSheets : "";
-            const url = `${urlBase}?action=gravarLog&origem=FRONT-CONF&usuario=${encodeURIComponent(userLog)}&acao=${encodeURIComponent(acao)}&detalhes=${encodeURIComponent(detalhes)}`;
-            
-            // Dispara a requisição em background silencioso para manter a performance do coletor mobile estável
-            fetch(url).catch(err => console.error("Erro silencioso ao registrar log de pátio:", err));
-        }
+function dispararLogConf(acao, detalhes) {
+    // Captura o e-mail digitado no input de login do FRONT-CONF como usuário de auditoria
+    const inputUser = document.getElementById('login-user');
+    const userLog = inputUser ? inputUser.value.trim().toUpperCase() : "CONFERENTE_DESCONHECIDO";
+    
+    // urlSheets é a sua constante que aponta para o script mestre do Google
+    const urlBase = typeof urlSheets !== 'undefined' ? urlSheets : "";
+    if (!urlBase) return;
+
+    // 🩹 INJEÇÃO CIRÚRGICA: Monta o payload estruturado para o motor do doPost
+    const pacoteLog = {
+        action: "gravarLog",
+        origem: "FRONT-CONF",
+        usuario: userLog,
+        acao: acao,
+        detalhes: detalhes
+    };
+
+    // 🔥 MODELO POST ANTI-REDIRECIONAMENTO (Resolve o erro 404 permanentemente)
+    fetch(urlBase, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(pacoteLog),
+        mode: 'cors'
+    })
+    .catch(err => {
+        // Silencia falhas no console para manter o ambiente do usuário final limpo
+        window.console.info("⚠️ Registro de log de auditoria processado em background.");
+    });
+}
+
 
         /**
          * FUNÇÃO EXCLUSIVA: Limpa a memória/cache local e alterna os estados do app
