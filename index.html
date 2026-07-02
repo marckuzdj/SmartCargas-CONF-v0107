@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0107.7</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.1</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4450,27 +4450,28 @@ function abrirModalDetalhesRomaneio() {
                 tbody.innerHTML = "";
 
                 res.dados.forEach(linha => {
-                    let numRom = parseInt(linha.ROMANEIO, 10);
+                    // 🩹 INJEÇÃO CIRÚRGICA: Propriedades normalizadas em minúsculas combinando com o Back-end
+                    let numRom = parseInt(linha.romaneio, 10);
                     if (isNaN(numRom) || numRom <= 0) return; 
 
                     const tr = document.createElement('tr');
                     tr.style.borderBottom = "1px solid #f1f1f1";
                     
-                    let badgeStatus = linha.Confirmado === "SIM" 
+                    let badgeStatus = linha.confirmado === "SIM" 
                         ? "<span style='background:#e8f5e9; color:#2e7d32; padding:3px 8px; border-radius:4px; font-weight:bold;'>SIM</span>"
                         : "<span style='background:#ffefee; color:#c9302c; padding:3px 8px; border-radius:4px;'>NÃO</span>";
 
                     tr.innerHTML = `
-                        <td style="padding: 10px; font-weight: bold;">${linha.ROMANEIO}</td>
-                        <td style="padding: 10px;">${linha.OV || '-'}</td>
-                        <td style="padding: 10px;">${linha.FORNEC_CROSS || '-'}</td>
-                        <td style="padding: 10px;">${linha.NF_CROSS || '-'}</td>
-                        <td style="padding: 10px;">${linha.FORNEC_LAST || '-'}</td>
-                        <td style="padding: 10px;">${linha.NF_LAST || '-'}</td>
-                        <td style="padding: 10px; text-align:center; font-weight:bold;">${linha.VOLUMES || '0'}</td>
+                        <td style="padding: 10px; font-weight: bold;">${linha.romaneio}</td>
+                        <td style="padding: 10px;">${linha.ov || '-'}</td>
+                        <td style="padding: 10px;">${linha.fornec_cross || '-'}</td>
+                        <td style="padding: 10px;">${linha.nf_cross || '-'}</td>
+                        <td style="padding: 10px;">${linha.fornec_last || '-'}</td>
+                        <td style="padding: 10px;">${linha.nf_last || '-'}</td>
+                        <td style="padding: 10px; text-align:center; font-weight:bold;">${linha.volumes || '0'}</td>
                         <td style="padding: 10px; text-align:center;">${badgeStatus}</td>
-                        <td style="padding: 10px;">${linha.Conferente || '-'}</td>
-                        <td style="padding: 10px; font-size:0.75rem; color:#666;">${linha.DataConferencia || '-'}</td>
+                        <td style="padding: 10px;">${linha.conferente || '-'}</td>
+                        <td style="padding: 10px; font-size:0.75rem; color:#666;">${linha.data || '-'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -4510,6 +4511,7 @@ function abrirModalDetalhesRomaneio() {
     };
     document.body.appendChild(script);
 }
+
 
 
 
