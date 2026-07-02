@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.10_HOM</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.11_HOM</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -1424,9 +1424,26 @@ async function atualizarDadosExtras() {
  }
  
  try {
- const urlCheck = `${urlSheets}?action=validarTokenRomaneio&romaneio=${encodeURIComponent(selectedId)}&token=${encodeURIComponent(tokenUsuario.trim())}`;
- const resCheck = await fetch(urlCheck);
- const dataCheck = await resCheck.json();
+   // ==========================================================================
+   // 🩹 INJEÇÃO CIRÚRGICA DE BLINDAGEM ANTI-CORS NO FETCH ASSÍNCRONO
+   // ==========================================================================
+   const urlCheck = `${urlSheets}?action=validarTokenRomaneio&romaneio=${encodeURIComponent(selectedId)}&token=${encodeURIComponent(tokenUsuario.trim())}`;
+   
+   // Adiciona configurações nativas para o navegador aceitar a resposta do Apps Script regional
+   const resCheck = await fetch(urlCheck, {
+       method: 'GET',
+       mode: 'cors', // Força o modo Cross-Origin Resource Sharing
+       headers: {
+           'Accept': 'application/json'
+       }
+   });
+   
+   if (!resCheck.ok) {
+       throw new Error(`Erro HTTP no servidor regional: Status ${resCheck.status}`);
+   }
+   
+   const dataCheck = await resCheck.json();
+   // ==========================================================================
  
  if (!dataCheck.valido) {
  // Alerta padrão limpo e sem códigos de debug para o usuário final
@@ -1438,6 +1455,7 @@ async function atualizarDadosExtras() {
  if (progressoContainer) progressoContainer.style.display = "none";
  return;
  }
+
  // ==========================================================================
  // NOVA TRAVA DE SEGURANÇA: VALIDAÇÃO DO VALOR DO TOKEN3 COMPATÍVEL
  // ==========================================================================
