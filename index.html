@@ -4365,7 +4365,7 @@ function selecionarTipoOcorrencia(tipo) {
                 // 🌟 CRITÉRIO DE CONTADOR RECALIBRADO: Lê o tamanho total da lista bruta enviada pelo Sheets (20)
                 const totalItensPlanilha = listaItens.length;
                 
-                document.getElementById("txt-modo-perf").innerHTML = "<span style='color: #2b9348; font-weight: bold;'>🟢 Modo Validação em Lote Ativo (" + totalItensPlanilha + " pedidos)</span>";
+                document.getElementById("txt-modo-perf").innerHTML = "<span style='color: #2b9348; font-weight: bold;'>🟢 Validação em Lote Ativo (" + totalItensPlanilha + " pedidos pendentes)</span>";
                 console.log(" [MEMÓRIA] Romaneio sincronizado localmente. Total de registros: " + totalItensPlanilha);
               } else {
                 alert("Erro ao baixar romaneio do servidor: " + (data.error || data.mensagem || "Desconhecido"));
