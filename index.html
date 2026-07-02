@@ -392,7 +392,7 @@
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
       </div>
-      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.1</h2>
+      <h2 style="color: #8A05BE; margin: 0; font-size: 22px; font-weight: bold;">Conferência de Carga v0207.2</h2>
       <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Selecione o estado de operação em doca</p>
     </div>
 
@@ -4495,22 +4495,42 @@ function abrirModalDetalhesRomaneio() {
     };
 
     // Executa a injeção nativa via Tag Script (Bypassa o bloqueio de CORS da GitHub Pages)
-    const srcUrl = `${endpointFinal.trim()}?action=obterDetalhesBaseRomaneio&romaneio=${encodeURIComponent(romaneioAtivo)}&uf=${encodeURIComponent(ufContexto.trim().toUpperCase())}&callback=${ID_CHAMADA}`;
+    // ============================================================================
+    // 🩹 TRAVA DEFINITIVA DE TRANSMISSÃO DE REDE ANTI-CRASH
+    // ============================================================================
+    // Força a limpeza e validação das strings antes de injetar na URL
+    var endpointTratado = endpointFinal.toString().trim();
+    var romaneioTratado = encodeURIComponent(romaneioAtivo.toString().trim());
+    var ufTratada = encodeURIComponent(ufContexto.toString().trim().toUpperCase());
+
+    // 🚀 MONTAGEM ULTRA-BLINDADA: Garante a passagem do callback exato gerado na linha 31
+    const srcUrl = `${endpointTratado}?action=obterDetalhesBaseRomaneio&romaneio=${romaneioTratado}&uf=${ufTratada}&callback=${ID_CHAMADA}`;
+    
+    console.log("📡 [DISPARANDO LINK REAL] ➔ " + srcUrl);
+
     const script = document.createElement('script');
     script.src = srcUrl;
     script.id = ID_CHAMADA;
+    
     script.onerror = function() {
         if (loading) loading.style.display = 'none';
         
         const containerErros = document.getElementById('corpoTabelaDetalhes');
         if (containerErros) {
-            containerErros.innerHTML = `<div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">⚠️ Falha física de comunicação com o servidor de borda.</div>`;
+            containerErros.innerHTML = `
+                <div style="text-align:center; padding:30px; color:#d9534f; font-size:13px; font-weight:bold;">
+                    ⚠️ Falha física de comunicação com o servidor de borda.<br>
+                    <span style="font-size:10px; font-weight:normal; color:#777; display:block; margin-top:5px;">Verifique se a nova versão do Apps Script foi implantada corretamente.</span>
+                </div>
+            `;
         }
         delete window[ID_CHAMADA];
         script.remove();
     };
+    
     document.body.appendChild(script);
 }
+
 
 
 
